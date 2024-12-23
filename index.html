@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top of the Moon - Watching the Sun</title>
+    <title>3D Cube with Rainbow Colors, Cool Effects</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
         canvas { display: block; }
+
         #credits {
             position: absolute;
             top: 10px;
@@ -20,6 +21,7 @@
 </head>
 <body>
     <div id="credits">Created by LarninialC</div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         const scene = new THREE.Scene();
@@ -28,31 +30,33 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create a stationary Moon (a large sphere)
-        const moonGeometry = new THREE.SphereGeometry(1, 32, 32);
-        const moonMaterial = new THREE.MeshStandardMaterial({
-            color: 0xaaaaaa,
-            roughness: 0.5,
-            metalness: 0.1,
-            emissive: 0x666666,
-            emissiveIntensity: 0.5
-        });
-        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-        scene.add(moon);
+        const geometry = new THREE.BoxGeometry();
+        const materials = Array.from({ length: 6 }, () => new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        const cube = new THREE.Mesh(geometry, materials);
+        scene.add(cube);
 
-        // Position the camera on top of the Moon
-        camera.position.set(0, 1.1, 0); // Just above the surface of the Moon
+        camera.position.z = 5;
 
-        // Create the Sun
-        const sunGeometry = new THREE.SphereGeometry(3, 32, 32);
-        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, emissive: 0xffff00 });
-        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        sun.position.set(10, 5, -20); // Far away from the Moon, visible in the distance
-        scene.add(sun);
+        function hsvToRgb(h, s, v) {
+            let r, g, b;
+            const i = Math.floor(h * 6);
+            const f = h * 6 - i;
+            const p = v * (1 - s);
+            const q = v * (1 - f * s);
+            const t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0: (r = v), (g = t), (b = p); break;
+                case 1: (r = q), (g = v), (b = p); break;
+                case 2: (r = p), (g = v), (b = t); break;
+                case 3: (r = p), (g = q), (b = v); break;
+                case 4: (r = t), (g = p), (b = v); break;
+                case 5: (r = v), (g = p), (b = q); break;
+            }
+            return new THREE.Color(r, g, b);
+        }
 
-        // Add Stars as background
         const starGeometry = new THREE.BufferGeometry();
-        const starCount = 10000;
+        const starCount = 5000;
         const starVertices = [];
 
         for (let i = 0; i < starCount; i++) {
@@ -63,35 +67,66 @@
         }
 
         starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1 });
+        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: true });
         const starField = new THREE.Points(starGeometry, starMaterial);
         scene.add(starField);
 
-        // Add a Supernova Effect (just a large glowing sphere in the background)
-        const supernovaGeometry = new THREE.SphereGeometry(10, 32, 32);
-        const supernovaMaterial = new THREE.MeshBasicMaterial({ color: 0xff3300, emissive: 0xff3300 });
-        const supernova = new THREE.Mesh(supernovaGeometry, supernovaMaterial);
-        supernova.position.set(-30, 20, 30); // Position the supernova far away
-        scene.add(supernova);
+        function addRandomShape(x, y) {
+            const shapes = [
+                new THREE.BoxGeometry(0.3, 0.3, 0.3),
+                new THREE.ConeGeometry(0.25, 0.5, 32),
+                new THREE.CylinderGeometry(0.2, 0.2, 0.5, 32),
+                new THREE.SphereGeometry(0.25, 32, 32),
+            ];
 
-        // Add light sources for enhanced effect
-        const ambientLight = new THREE.AmbientLight(0x555555); // Dim ambient light
-        scene.add(ambientLight);
+            const shapeGeometry = shapes[Math.floor(Math.random() * shapes.length)];
+            const shapeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const shape = new THREE.Mesh(shapeGeometry, shapeMaterial);
 
-        const sunLight = new THREE.PointLight(0xffff00, 2, 100); // Sun light
-        sunLight.position.set(10, 5, -20);
-        scene.add(sunLight);
+            const mouseVector = new THREE.Vector3(
+                (x / window.innerWidth) * 2 - 1,
+                -(y / window.innerHeight) * 2 + 1,
+                0.5
+            );
+            mouseVector.unproject(camera);
+            const dir = mouseVector.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            const position = camera.position.clone().add(dir.multiplyScalar(distance));
+            shape.position.copy(position);
 
-        // Adjust the scene's lighting
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(10, 10, 10).normalize();
-        scene.add(directionalLight);
+            scene.add(shape);
 
-        // Animate the scene
+            let hue = Math.random();
+            function animateShape() {
+                requestAnimationFrame(animateShape);
+                hue += 0.01;
+                if (hue > 1) hue = 0;
+                shapeMaterial.color = hsvToRgb(hue, 1, 1);
+                shape.rotation.x += 0.02;
+                shape.rotation.y += 0.02;
+            }
+            animateShape();
+        }
+
+        window.addEventListener('click', (event) => addRandomShape(event.clientX, event.clientY));
+
+        let rotationSpeed = 0.02;
+
+        let hue = 0;
         function animate() {
             requestAnimationFrame(animate);
 
-            // Don't rotate the camera, keep it fixed on the moon
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+
+            hue += 0.01;
+            if (hue > 1) hue = 0;
+
+            for (let i = 0; i < materials.length; i++) {
+                const faceHue = (hue + i * 0.16) % 1;
+                materials[i].color = hsvToRgb(faceHue, 1, 1);
+            }
+
             renderer.render(scene, camera);
         }
 
