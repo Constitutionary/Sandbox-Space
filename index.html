@@ -17,10 +17,40 @@
             font-size: 18px;
             z-index: 10;
         }
+
+        #version {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            z-index: 10;
+        }
+
+        #reset-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 15px;
+            background-color: gray;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            border: 1px solid darkgray;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #reset-button:hover {
+            background-color: darkgray;
+        }
     </style>
 </head>
 <body>
     <div id="credits">Created by LarninialC</div>
+    <div id="version">v2</div>
+    <button id="reset-button">Reset All</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -30,11 +60,35 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
+
         const geometry = new THREE.BoxGeometry();
-        const materials = Array.from({ length: 6 }, () => new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        const materials = Array.from({ length: 6 }, () => new THREE.MeshStandardMaterial({ color: 0xffffff }));
         const cube = new THREE.Mesh(geometry, materials);
         scene.add(cube);
 
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 5000;
+        const starVertices = [];
+
+        for (let i = 0; i < starCount; i++) {
+            const x = (Math.random() - 0.5) * 2000;
+            const y = (Math.random() - 0.5) * 2000;
+            const z = (Math.random() - 0.5) * 2000;
+            starVertices.push(x, y, z);
+        }
+
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: true });
+        const starField = new THREE.Points(starGeometry, starMaterial);
+        scene.add(starField);
+
+        const shapes = [];
         camera.position.z = 5;
 
         function hsvToRgb(h, s, v) {
@@ -55,38 +109,25 @@
             return new THREE.Color(r, g, b);
         }
 
-        const starGeometry = new THREE.BufferGeometry();
-        const starCount = 5000;
-        const starVertices = [];
-
-        for (let i = 0; i < starCount; i++) {
-            const x = (Math.random() - 0.5) * 2000;
-            const y = (Math.random() - 0.5) * 2000;
-            const z = (Math.random() - 0.5) * 2000;
-            starVertices.push(x, y, z);
-        }
-
-        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: true });
-        const starField = new THREE.Points(starGeometry, starMaterial);
-        scene.add(starField);
-
         function addRandomShape(x, y) {
-            const shapes = [
+            const shapeGeometries = [
                 new THREE.BoxGeometry(0.3, 0.3, 0.3),
                 new THREE.ConeGeometry(0.25, 0.5, 32),
                 new THREE.CylinderGeometry(0.2, 0.2, 0.5, 32),
                 new THREE.SphereGeometry(0.25, 32, 32),
+                new THREE.DodecahedronGeometry(0.3),
             ];
 
-            const shapeGeometry = shapes[Math.floor(Math.random() * shapes.length)];
-            const shapeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const shapeGeometry = shapeGeometries[Math.floor(Math.random() * shapeGeometries.length)];
+            const shapeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
             const shape = new THREE.Mesh(shapeGeometry, shapeMaterial);
 
+            const fixedDepth = -5;
+            
             const mouseVector = new THREE.Vector3(
                 (x / window.innerWidth) * 2 - 1,
                 -(y / window.innerHeight) * 2 + 1,
-                0.5
+                fixedDepth
             );
             mouseVector.unproject(camera);
             const dir = mouseVector.sub(camera.position).normalize();
@@ -95,6 +136,7 @@
             shape.position.copy(position);
 
             scene.add(shape);
+            shapes.push(shape);
 
             let hue = Math.random();
             function animateShape() {
@@ -108,9 +150,52 @@
             animateShape();
         }
 
+        function createExtrudedShape(p1, p2, p3, height) {
+            const shape = new THREE.Shape();
+            shape.moveTo(p1[0], p1[1]);
+            shape.lineTo(p2[0], p2[1]);
+            shape.lineTo(p3[0], p3[1]);
+            shape.lineTo(p1[0], p1[1]);
+            const extrudeSettings = { depth: height, bevelEnabled: false };
+            return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        }
+
+        document.getElementById('reset-button').addEventListener('click', () => {
+            shapes.forEach(shape => scene.remove(shape));
+            shapes.length = 0;
+        });
+
         window.addEventListener('click', (event) => addRandomShape(event.clientX, event.clientY));
 
-        let rotationSpeed = 0.02;
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        function updateCameraRotation(deltaX, deltaY) {
+            const rotationSpeed = 0.002;
+            camera.rotation.y += deltaX * rotationSpeed;
+            camera.rotation.x += deltaY * rotationSpeed;
+        }
+
+        window.addEventListener('touchstart', (event) => {
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+
+        window.addEventListener('touchmove', (event) => {
+            const deltaX = event.touches[0].clientX - touchStartX;
+            const deltaY = event.touches[0].clientY - touchStartY;
+            updateCameraRotation(deltaX, deltaY);
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+
+        window.addEventListener('mousemove', (event) => {
+            const deltaX = event.clientX - touchStartX;
+            const deltaY = event.clientY - touchStartY;
+            updateCameraRotation(deltaX, deltaY);
+            touchStartX = event.clientX;
+            touchStartY = event.clientY;
+        });
 
         let hue = 0;
         function animate() {
