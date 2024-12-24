@@ -105,7 +105,7 @@
         const shapes = [];
         camera.position.z = 5;
 
-        let selectedShape = null; // Track selected shape
+        let selectedShape = null;
 
         function hsvToRgb(h, s, v) {
             let r, g, b;
@@ -168,44 +168,41 @@
             animateShape();
         }
 
-        // Event listener for shape buttons
         document.getElementById('cube-button').addEventListener('click', (event) => { 
-            event.stopPropagation(); // Prevent shape stamping
+            event.stopPropagation();
             selectedShape = 'cube'; 
         });
 
         document.getElementById('cone-button').addEventListener('click', (event) => { 
-            event.stopPropagation(); // Prevent shape stamping
+            event.stopPropagation(); 
             selectedShape = 'cone'; 
         });
 
         document.getElementById('cylinder-button').addEventListener('click', (event) => { 
-            event.stopPropagation(); // Prevent shape stamping
+            event.stopPropagation(); 
             selectedShape = 'cylinder'; 
         });
 
         document.getElementById('sphere-button').addEventListener('click', (event) => { 
-            event.stopPropagation(); // Prevent shape stamping
+            event.stopPropagation(); 
             selectedShape = 'sphere'; 
         });
 
         document.getElementById('dodecahedron-button').addEventListener('click', (event) => { 
-            event.stopPropagation(); // Prevent shape stamping
+            event.stopPropagation(); 
             selectedShape = 'dodecahedron'; 
         });
 
-        // Reset button functionality
         document.getElementById('reset-button').addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent reset button from triggering shape stamping
+            event.stopPropagation(); 
             shapes.forEach(shape => scene.remove(shape));
             shapes.length = 0;
         });
 
-        // Camera rotation limits
-        const maxRotationX = Math.PI / 2; // Max rotation on the X axis (up/down)
-        const minRotationX = -Math.PI / 2; // Min rotation on the X axis
-        const maxRotationY = Math.PI; // Max rotation on the Y axis (left/right)
-        const minRotationY = -Math.PI; // Min rotation on the Y axis
+        const maxRotationX = Math.PI / 2;
+        const minRotationX = -Math.PI / 2;
+        const maxRotationY = Math.PI;
+        const minRotationY = -Math.PI;
 
         let touchStartX = 0;
         let touchStartY = 0;
@@ -215,7 +212,6 @@
             camera.rotation.y += deltaX * rotationSpeed;
             camera.rotation.x += deltaY * rotationSpeed;
 
-            // Apply rotation limits
             if (camera.rotation.x > maxRotationX) camera.rotation.x = maxRotationX;
             if (camera.rotation.x < minRotationX) camera.rotation.x = minRotationX;
             if (camera.rotation.y > maxRotationY) camera.rotation.y = maxRotationY;
@@ -236,7 +232,7 @@
         });
 
         window.addEventListener('mousemove', (event) => {
-            if (event.buttons === 1) { // Check if the left mouse button is held
+            if (event.buttons === 1) {
                 const deltaX = event.movementX;
                 const deltaY = event.movementY;
                 updateCameraRotation(deltaX, deltaY);
@@ -250,14 +246,12 @@
 
         animate();
 
-        // Event listener for creating shapes by mouse click
         window.addEventListener('click', (event) => {
             if (selectedShape) {
                 addShape(selectedShape, event.clientX, event.clientY);
             }
         });
 
-        // Resize the canvas when the window is resized
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
