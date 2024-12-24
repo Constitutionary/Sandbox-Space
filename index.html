@@ -32,18 +32,29 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            padding: 10px 15px;
-            background-color: gray;
-            color: white;
-            font-family: Arial, sans-serif;
-            font-size: 16px;
-            border: 1px solid darkgray;
-            cursor: pointer;
             z-index: 10;
         }
 
-        #reset-button:hover {
-            background-color: darkgray;
+        #shape-buttons {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            z-index: 10;
+        }
+
+        .shape-button {
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            z-index: 10;
+            background: none;
+            border: none;
+            color: white;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        .shape-button:focus {
+            outline: none;
         }
     </style>
 </head>
@@ -51,6 +62,14 @@
     <div id="credits">Created by LarninialC</div>
     <div id="version">v2</div>
     <button id="reset-button">Reset All</button>
+
+    <div id="shape-buttons">
+        <button class="shape-button" id="cube-button">Cube</button>
+        <button class="shape-button" id="cone-button">Cone</button>
+        <button class="shape-button" id="cylinder-button">Cylinder</button>
+        <button class="shape-button" id="sphere-button">Sphere</button>
+        <button class="shape-button" id="dodecahedron-button">Dodecahedron</button>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -66,11 +85,6 @@
         const pointLight = new THREE.PointLight(0xffffff, 1, 100);
         pointLight.position.set(10, 10, 10);
         scene.add(pointLight);
-
-        const geometry = new THREE.BoxGeometry();
-        const materials = Array.from({ length: 6 }, () => new THREE.MeshStandardMaterial({ color: 0xffffff }));
-        const cube = new THREE.Mesh(geometry, materials);
-        scene.add(cube);
 
         const starGeometry = new THREE.BufferGeometry();
         const starCount = 5000;
@@ -91,6 +105,8 @@
         const shapes = [];
         camera.position.z = 5;
 
+        let selectedShape = null; // Track selected shape
+
         function hsvToRgb(h, s, v) {
             let r, g, b;
             const i = Math.floor(h * 6);
@@ -109,7 +125,7 @@
             return new THREE.Color(r, g, b);
         }
 
-        function addRandomShape(x, y) {
+        function addShape(type, x, y) {
             const shapeGeometries = [
                 new THREE.BoxGeometry(0.3, 0.3, 0.3),
                 new THREE.ConeGeometry(0.25, 0.5, 32),
@@ -118,12 +134,14 @@
                 new THREE.DodecahedronGeometry(0.3),
             ];
 
-            const shapeGeometry = shapeGeometries[Math.floor(Math.random() * shapeGeometries.length)];
-            const shapeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const shape = new THREE.Mesh(shapeGeometry, shapeMaterial);
+            let shape;
+            if (type === 'cube') shape = new THREE.Mesh(shapeGeometries[0], new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            if (type === 'cone') shape = new THREE.Mesh(shapeGeometries[1], new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            if (type === 'cylinder') shape = new THREE.Mesh(shapeGeometries[2], new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            if (type === 'sphere') shape = new THREE.Mesh(shapeGeometries[3], new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            if (type === 'dodecahedron') shape = new THREE.Mesh(shapeGeometries[4], new THREE.MeshStandardMaterial({ color: 0xffffff }));
 
             const fixedDepth = -5;
-            
             const mouseVector = new THREE.Vector3(
                 (x / window.innerWidth) * 2 - 1,
                 -(y / window.innerHeight) * 2 + 1,
@@ -143,29 +161,51 @@
                 requestAnimationFrame(animateShape);
                 hue += 0.01;
                 if (hue > 1) hue = 0;
-                shapeMaterial.color = hsvToRgb(hue, 1, 1);
+                shape.material.color = hsvToRgb(hue, 1, 1);
                 shape.rotation.x += 0.02;
                 shape.rotation.y += 0.02;
             }
             animateShape();
         }
 
-        function createExtrudedShape(p1, p2, p3, height) {
-            const shape = new THREE.Shape();
-            shape.moveTo(p1[0], p1[1]);
-            shape.lineTo(p2[0], p2[1]);
-            shape.lineTo(p3[0], p3[1]);
-            shape.lineTo(p1[0], p1[1]);
-            const extrudeSettings = { depth: height, bevelEnabled: false };
-            return new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        }
+        // Event listener for shape buttons
+        document.getElementById('cube-button').addEventListener('click', (event) => { 
+            event.stopPropagation(); // Prevent shape stamping
+            selectedShape = 'cube'; 
+        });
 
-        document.getElementById('reset-button').addEventListener('click', () => {
+        document.getElementById('cone-button').addEventListener('click', (event) => { 
+            event.stopPropagation(); // Prevent shape stamping
+            selectedShape = 'cone'; 
+        });
+
+        document.getElementById('cylinder-button').addEventListener('click', (event) => { 
+            event.stopPropagation(); // Prevent shape stamping
+            selectedShape = 'cylinder'; 
+        });
+
+        document.getElementById('sphere-button').addEventListener('click', (event) => { 
+            event.stopPropagation(); // Prevent shape stamping
+            selectedShape = 'sphere'; 
+        });
+
+        document.getElementById('dodecahedron-button').addEventListener('click', (event) => { 
+            event.stopPropagation(); // Prevent shape stamping
+            selectedShape = 'dodecahedron'; 
+        });
+
+        // Reset button functionality
+        document.getElementById('reset-button').addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent reset button from triggering shape stamping
             shapes.forEach(shape => scene.remove(shape));
             shapes.length = 0;
         });
 
-        window.addEventListener('click', (event) => addRandomShape(event.clientX, event.clientY));
+        // Camera rotation limits
+        const maxRotationX = Math.PI / 2; // Max rotation on the X axis (up/down)
+        const minRotationX = -Math.PI / 2; // Min rotation on the X axis
+        const maxRotationY = Math.PI; // Max rotation on the Y axis (left/right)
+        const minRotationY = -Math.PI; // Min rotation on the Y axis
 
         let touchStartX = 0;
         let touchStartY = 0;
@@ -174,6 +214,12 @@
             const rotationSpeed = 0.002;
             camera.rotation.y += deltaX * rotationSpeed;
             camera.rotation.x += deltaY * rotationSpeed;
+
+            // Apply rotation limits
+            if (camera.rotation.x > maxRotationX) camera.rotation.x = maxRotationX;
+            if (camera.rotation.x < minRotationX) camera.rotation.x = minRotationX;
+            if (camera.rotation.y > maxRotationY) camera.rotation.y = maxRotationY;
+            if (camera.rotation.y < minRotationY) camera.rotation.y = minRotationY;
         }
 
         window.addEventListener('touchstart', (event) => {
@@ -190,38 +236,33 @@
         });
 
         window.addEventListener('mousemove', (event) => {
-            const deltaX = event.clientX - touchStartX;
-            const deltaY = event.clientY - touchStartY;
-            updateCameraRotation(deltaX, deltaY);
-            touchStartX = event.clientX;
-            touchStartY = event.clientY;
+            if (event.buttons === 1) { // Check if the left mouse button is held
+                const deltaX = event.movementX;
+                const deltaY = event.movementY;
+                updateCameraRotation(deltaX, deltaY);
+            }
         });
 
-        let hue = 0;
         function animate() {
             requestAnimationFrame(animate);
-
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
-
-            hue += 0.01;
-            if (hue > 1) hue = 0;
-
-            for (let i = 0; i < materials.length; i++) {
-                const faceHue = (hue + i * 0.16) % 1;
-                materials[i].color = hsvToRgb(faceHue, 1, 1);
-            }
-
             renderer.render(scene, camera);
         }
 
+        animate();
+
+        // Event listener for creating shapes by mouse click
+        window.addEventListener('click', (event) => {
+            if (selectedShape) {
+                addShape(selectedShape, event.clientX, event.clientY);
+            }
+        });
+
+        // Resize the canvas when the window is resized
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
         });
-
-        animate();
     </script>
 </body>
 </html>
