@@ -1,1 +1,1 @@
-This is a Sandbox in Space Game, You can't Really do Nothing But You can Create with your Imaginary with The help of Shape's!
+This is a 3D Sandbox Game, Shape Your Own Imagination with a Simple Shapes! 
